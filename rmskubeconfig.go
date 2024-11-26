@@ -1,7 +1,6 @@
 package rmskubeconfig
 
 import (
-	"errors"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,56 +17,53 @@ type Config struct {
 }
 
 // NewConfig creates a new Config instance with default values
-func NewConfig() (*Config, error) {
+func NewConfig() *Config {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		log.Fatalf("NewConfig: failed to get current working directory: %v", err)
 	}
 
 	return &Config{
 		rMSUrl:     "",
 		aPIToken:   "",
 		outputPath: cwd,
-	}, nil
+	}
 }
 
 // SetRMSUrl sets RMS API URL
-func (c *Config) SetRMSUrl(url string) error {
+func (c *Config) SetRMSUrl(url string) {
 	// validate URL format
 	regex := `^(https?:\/\/)?([\w\-]+(\.[\w\-]+)+)(:[0-9]{1,5})?(\/[^\s]*)?$`
 	if match, _ := regexp.MatchString(regex, url); !match {
-		return errors.New("invalid RMS URL format")
+		log.Fatalf("SetRMSUrl: invalid RMS URL format: %s", url)
 	}
 	c.rMSUrl = url
-	return nil
 }
 
 // SetApiToken sets RMS API token
-func (c *Config) SetApiToken(token string) error {
+func (c *Config) SetApiToken(token string) {
 	// validate token format
 	regex := `^token-\w+:\w+`
 
 	if match, _ := regexp.MatchString(regex, token); !match {
-		return errors.New("invalid API token format")
+		log.Fatalf("SetApiToken: invalid API token format")
 	}
 	c.aPIToken = token
-	return nil
 }
 
 // SetOutputPath sets path where to save config file
-func (c *Config) SetOutputPath(path string) error {
+func (c *Config) SetOutputPath(path string) {
 	// validate path exists and ensure it's a directory
 	fileInfo, err := os.Stat(path)
 	if err != nil || !fileInfo.IsDir() {
-		return errors.New("output path must be an existing directory")
+		log.Fatalf("SetOutputPath: output path must be an existing directory: %s", path)
 	}
 	// convert to absolute path
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return errors.New("failed to resolve absolute path")
+		log.Fatalf("SetOutputPath: failed to resolve absolute path: %s", path)
 	}
 	c.outputPath = absPath
-	return nil
 }
 
 // GetRMSUrl returns RMS API URL
@@ -94,8 +90,8 @@ func (c *Config) Run() {
 		clusterIDs = append(clusterIDs, cluster.ID)
 	}
 
-	err := kubeconfig.GenerateCombinedKubeconfig(c.rMSUrl, c.aPIToken, clusterIDs)
+	err := kubeconfig.GenerateCombinedKubeconfig(c.rMSUrl, c.aPIToken, c.outputPath, clusterIDs)
 	if err != nil {
-		log.Fatalf("error generating combined kubeconfig: %v", err)
+		log.Fatalf("Run: error generating combined kubeconfig: %v", err)
 	}
 }

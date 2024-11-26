@@ -42,7 +42,7 @@ func GetClusters(baseURL, apiToken string) []types.RMSCluster {
 }
 
 // GenerateCombinedKubeconfig combines all generated kubeconfig files into one kubeconfig (config) file
-func GenerateCombinedKubeconfig(baseURL, apiToken string, clusterIDs []string) error {
+func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs []string) error {
 
 	client := &http.Client{}
 	combinedKubeconfig := &types.Kubeconfig{
@@ -91,24 +91,15 @@ func GenerateCombinedKubeconfig(baseURL, apiToken string, clusterIDs []string) e
 		log.Fatalf("Failed to marshal combined kubeconfig YAML: %v", err)
 	}
 
-	createConfigFile(string(combinedKubeconfigYaml))
+	createConfigFile(combinedKubeconfigYaml, outputPath)
 	return nil
 
 }
 
-func createConfigFile(s string) {
-	file, err := os.Create("config")
+func createConfigFile(combinedKubeconfigYaml []byte, outputPath string) {
+	err := os.WriteFile(outputPath+"/config", combinedKubeconfigYaml, 0644)
+	log.Printf("Config file saved here: %s", outputPath+"/config")
 	if err != nil {
-		log.Fatalf("Error creating config file: %v", err)
-	}
-
-	file.WriteString(s)
-	if err != nil {
-		log.Fatalf("Error writing data to file: %v", err)
-	}
-
-	err = file.Close()
-	if err != nil {
-		log.Fatalf("Error closing file: %v", err)
+		log.Fatalf("Error creating combined config file: %v", err)
 	}
 }
