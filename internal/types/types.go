@@ -9,9 +9,6 @@ type RMSClusterResponse struct {
 	Data []RMSCluster `json:"data"`
 }
 
-type Anyd struct {
-	Config string `json:"config"`
-}
 type KubeconfigResponse struct {
 	Config string `json:"config"`
 }
