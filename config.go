@@ -66,18 +66,18 @@ func (c *Config) SetOutputPath(path string) {
 	c.outputPath = absPath
 }
 
-// GetRMSUrl returns RMS API URL
-func (c *Config) GetRMSUrl() string {
+// RMSUrl returns RMS API URL
+func (c *Config) RMSUrl() string {
 	return c.rMSUrl
 }
 
-// GetApiToken returns RMS API token
-func (c *Config) GetApiToken() string {
+// ApiToken returns RMS API token
+func (c *Config) ApiToken() string {
 	return c.aPIToken
 }
 
-// GetOutputPath returns output file path
-func (c *Config) GetOutputPath() string {
+// OutputPath returns output file path
+func (c *Config) OutputPath() string {
 	return c.outputPath
 }
 

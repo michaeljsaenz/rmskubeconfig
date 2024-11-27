@@ -12,10 +12,12 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+const clusterListPath string = "/v3/clusters/"
+
 // GetClusters retrieves a list of all clusters from RMS
 func GetClusters(baseURL, apiToken string) []types.RMSCluster {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", baseURL+"/v3/clusters", nil)
+	req, err := http.NewRequest("GET", baseURL+clusterListPath, nil)
 	if err != nil {
 		log.Fatalf("Error creating cluster request: %v", err)
 	}
@@ -52,7 +54,7 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 
 	for _, clusterID := range clusterIDs {
 
-		url := fmt.Sprintf("%s/v3/clusters/%s?action=generateKubeconfig", baseURL, clusterID)
+		url := fmt.Sprintf("%s%s%s?action=generateKubeconfig", baseURL, clusterListPath, clusterID)
 		req, err := http.NewRequest("POST", url, nil)
 		if err != nil {
 			log.Fatalf("Error creating generate kubeconfig request: %v", err)
