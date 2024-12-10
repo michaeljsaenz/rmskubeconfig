@@ -11,8 +11,8 @@ import (
 
 // Config holds values for processing
 type Config struct {
-	rMSUrl     string
-	aPIToken   string
+	rmsUrl     string
+	apiToken   string
 	outputPath string
 }
 
@@ -24,8 +24,8 @@ func NewConfig() *Config {
 	}
 
 	return &Config{
-		rMSUrl:     "",
-		aPIToken:   "",
+		rmsUrl:     "",
+		apiToken:   "",
 		outputPath: cwd,
 	}
 }
@@ -37,7 +37,7 @@ func (c *Config) SetRMSUrl(url string) {
 	if match, _ := regexp.MatchString(regex, url); !match {
 		log.Fatalf("SetRMSUrl: invalid RMS URL format: %s", url)
 	}
-	c.rMSUrl = url
+	c.rmsUrl = url
 }
 
 // SetApiToken sets RMS API token
@@ -48,7 +48,7 @@ func (c *Config) SetApiToken(token string) {
 	if match, _ := regexp.MatchString(regex, token); !match {
 		log.Fatalf("SetApiToken: invalid API token format")
 	}
-	c.aPIToken = token
+	c.apiToken = token
 }
 
 // SetOutputPath sets path where to save config file
@@ -68,12 +68,12 @@ func (c *Config) SetOutputPath(path string) {
 
 // RMSUrl returns RMS API URL
 func (c *Config) RMSUrl() string {
-	return c.rMSUrl
+	return c.rmsUrl
 }
 
 // ApiToken returns RMS API token
 func (c *Config) ApiToken() string {
-	return c.aPIToken
+	return c.apiToken
 }
 
 // OutputPath returns output file path
@@ -83,14 +83,14 @@ func (c *Config) OutputPath() string {
 
 // Run executes the Config to generate combined kubeconfig (config) file
 func (c *Config) Run() {
-	clusters := kubeconfig.GetClusters(c.rMSUrl, c.aPIToken)
+	clusters, _ := kubeconfig.GetClusters(c.rmsUrl, c.apiToken)
 
 	var clusterIDs []string
 	for _, cluster := range clusters {
 		clusterIDs = append(clusterIDs, cluster.ID)
 	}
 
-	err := kubeconfig.GenerateCombinedKubeconfig(c.rMSUrl, c.aPIToken, c.outputPath, clusterIDs)
+	err := kubeconfig.GenerateCombinedKubeconfig(c.rmsUrl, c.apiToken, c.outputPath, clusterIDs)
 	if err != nil {
 		log.Fatalf("Run: error generating combined kubeconfig: %v", err)
 	}
