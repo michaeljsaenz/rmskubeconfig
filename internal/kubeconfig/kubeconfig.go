@@ -20,7 +20,12 @@ func GetClusters(baseURL, apiToken string) ([]types.RMSCluster, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", baseURL+clusterListPath, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating cluster request: %v", err)
+		// 	return nil, fmt.Errorf("error creating cluster request: %v", err)
+		// }
+		return nil, &types.RequestError{
+			Code:    1000,
+			Message: fmt.Sprintf("error creating cluster request: %v", err),
+		}
 	}
 
 	req.Header.Set("Authorization", "Bearer "+apiToken)

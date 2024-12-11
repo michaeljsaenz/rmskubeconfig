@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 type RMSCluster struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -44,4 +46,15 @@ type Kubeconfig struct {
 	Clusters   []KubeconfigCluster `yaml:"clusters" json:"clusters"`
 	Users      []KubeconfigUser    `yaml:"users" json:"users"`
 	Contexts   []KubeconfigContext `yaml:"contexts" json:"contexts"`
+}
+
+const ErrRequestCode = 1000
+
+type RequestError struct {
+	Code    int
+	Message string
+}
+
+func (e *RequestError) Error() string {
+	return fmt.Sprintf("code: %d, message: %s", e.Code, e.Message)
 }
