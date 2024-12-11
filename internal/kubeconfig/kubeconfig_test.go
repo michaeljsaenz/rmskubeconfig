@@ -2,6 +2,7 @@ package kubeconfig
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -54,6 +55,28 @@ func TestGetClusters_Unauthorized(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "401") {
 		t.Errorf("Expected 401 error, but got: %v", err)
+	}
+
+}
+
+func TestGetClusters_InvalidUrl(t *testing.T) {
+	// mock rms-api server
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}))
+	defer mockServer.Close()
+	_, err := GetClusters("://invalid-url", "mockApiToken")
+	if err == nil {
+		t.Fatalf("expected error, but got nil")
+	}
+
+	var reqErr *types.RequestError
+	if !errors.As(err, &reqErr) {
+		t.Fatalf("expected RequestError, but got: %T", err)
+	}
+
+	if reqErr.Code != types.ErrRequestCode {
+		t.Errorf("expected error code %d, but got: %d", types.ErrRequestCode, reqErr.Code)
 	}
 
 }
