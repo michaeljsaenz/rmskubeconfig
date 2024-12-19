@@ -20,10 +20,8 @@ func GetClusters(baseURL, apiToken string) ([]types.RMSCluster, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", baseURL+clusterListPath, nil)
 	if err != nil {
-		// 	return nil, fmt.Errorf("error creating cluster request: %v", err)
-		// }
 		return nil, &types.RequestError{
-			Code:    1000,
+			Code:    types.ErrRequestCode,
 			Message: fmt.Sprintf("error creating cluster request: %v", err),
 		}
 	}
@@ -32,21 +30,33 @@ func GetClusters(baseURL, apiToken string) ([]types.RMSCluster, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching clusters: %v", err)
+		return nil, &types.RequestError{
+			Code:    types.ErrRequestCode,
+			Message: fmt.Sprintf("error fetching clusters: %v", err),
+		}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
-			return nil, fmt.Errorf("unexpected response status fetching clusters: %d, and error reading body: %v", resp.StatusCode, readErr)
+			return nil, &types.RequestError{
+				Code:    types.ErrRequestCode,
+				Message: fmt.Sprintf("unexpected response status fetching clusters: %d, and error reading body: %v", resp.StatusCode, readErr),
+			}
 		}
-		return nil, fmt.Errorf("unexpected response status fetching clusters: %d, and response body: %s", resp.StatusCode, string(body))
+		return nil, &types.RequestError{
+			Code:    types.ErrRequestCode,
+			Message: fmt.Sprintf("unexpected response status fetching clusters: %d, and response body: %s", resp.StatusCode, string(body)),
+		}
 	}
 
 	var clusterResp types.RMSClusterResponse
 	if err := json.NewDecoder(resp.Body).Decode(&clusterResp); err != nil {
-		return nil, fmt.Errorf("error decoding cluster response: %v", err)
+		return nil, &types.RequestError{
+			Code:    types.ErrRequestCode,
+			Message: fmt.Sprintf("error decoding cluster response: %v", err),
+		}
 	}
 
 	return clusterResp.Data, nil
