@@ -3,7 +3,6 @@ package kubeconfig
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -38,16 +37,9 @@ func GetClusters(baseURL, apiToken string) ([]types.RMSCluster, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, readErr := io.ReadAll(resp.Body)
-		if readErr != nil {
-			return nil, &types.RequestError{
-				Code:    types.ErrRequestCode,
-				Message: fmt.Sprintf("unexpected response status fetching clusters: %d, and error reading body: %v", resp.StatusCode, readErr),
-			}
-		}
 		return nil, &types.RequestError{
 			Code:    types.ErrRequestCode,
-			Message: fmt.Sprintf("unexpected response status fetching clusters: %d, and response body: %s", resp.StatusCode, string(body)),
+			Message: fmt.Sprintf("unexpected response status fetching clusters: %v", resp.Status),
 		}
 	}
 

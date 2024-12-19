@@ -117,7 +117,6 @@ func TestGetClusters_ErrorDecodingResponse(t *testing.T) {
 	// mock rms-api server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// return non-JSON response
-		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("invalid json"))
 	}))
