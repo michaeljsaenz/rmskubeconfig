@@ -81,7 +81,10 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			log.Fatalf("Unexpected response status generating kubeconfig: %d", resp.StatusCode)
+			return &types.RequestError{
+				Code:    types.ErrRequestCode,
+				Message: fmt.Sprintf("Unexpected response status generating kubeconfig for cluster: %s (%v)", clusterID, resp.Status),
+			}
 		}
 
 		var kubeconfigResp types.KubeconfigResponse
@@ -112,7 +115,6 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 
 func createConfigFile(combinedKubeconfigYaml []byte, outputPath string) {
 	err := os.WriteFile(outputPath+"/config", combinedKubeconfigYaml, 0644)
-	log.Printf("Config file saved here: %s", outputPath+"/config")
 	if err != nil {
 		log.Fatalf("Error creating combined config file: %v", err)
 	}
