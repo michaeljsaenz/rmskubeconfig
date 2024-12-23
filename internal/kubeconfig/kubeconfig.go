@@ -3,7 +3,6 @@ package kubeconfig
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -79,7 +78,6 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Fatalf("Error making generate kubeconfig request: %v", err)
 			return &types.RequestError{
 				Code:    types.ErrRequestCode,
 				Message: fmt.Sprintf("error fetching kubeconfig generate for cluster: %s, error: %v", clusterID, err),
@@ -96,7 +94,6 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 
 		var kubeconfigResp types.KubeconfigResponse
 		if err := json.NewDecoder(resp.Body).Decode(&kubeconfigResp); err != nil {
-			log.Fatalf("Error decoding kubeconfig response: %v", err)
 			return &types.RequestError{
 				Code:    types.ErrRequestCode,
 				Message: fmt.Sprintf("error decoding generate kubeconfig response for cluster: %s, error: %v", clusterID, err),
@@ -106,7 +103,6 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 		var kubeconfig types.Kubeconfig
 		err = yaml.Unmarshal([]byte(kubeconfigResp.Config), &kubeconfig)
 		if err != nil {
-			log.Fatalf("Error unmarshaling YAML (kubeconfig response): %v", err)
 			return &types.RequestError{
 				Code:    types.ErrRequestCode,
 				Message: fmt.Sprintf("error unmarshaling YAML (generate kubeconfig response) for cluster: %s, error: %v", clusterID, err),
