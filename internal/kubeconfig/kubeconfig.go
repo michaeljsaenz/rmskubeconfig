@@ -69,7 +69,10 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 		url := fmt.Sprintf("%s%s%s?action=generateKubeconfig", baseURL, clusterListPath, clusterID)
 		req, err := http.NewRequest("POST", url, nil)
 		if err != nil {
-			log.Fatalf("Error creating generate kubeconfig request: %v", err)
+			return &types.RequestError{
+				Code:    types.ErrRequestCode,
+				Message: fmt.Sprintf("error creating new generate kubeconfig request: %v", err),
+			}
 		}
 
 		req.Header.Set("Authorization", "Bearer "+apiToken)
@@ -77,6 +80,10 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Fatalf("Error making generate kubeconfig request: %v", err)
+			return &types.RequestError{
+				Code:    types.ErrRequestCode,
+				Message: fmt.Sprintf("error fetching kubeconfig generate for cluster: %s, error: %v", clusterID, err),
+			}
 		}
 		defer resp.Body.Close()
 
@@ -90,12 +97,20 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 		var kubeconfigResp types.KubeconfigResponse
 		if err := json.NewDecoder(resp.Body).Decode(&kubeconfigResp); err != nil {
 			log.Fatalf("Error decoding kubeconfig response: %v", err)
+			return &types.RequestError{
+				Code:    types.ErrRequestCode,
+				Message: fmt.Sprintf("error decoding generate kubeconfig response for cluster: %s, error: %v", clusterID, err),
+			}
 		}
 
 		var kubeconfig types.Kubeconfig
 		err = yaml.Unmarshal([]byte(kubeconfigResp.Config), &kubeconfig)
 		if err != nil {
 			log.Fatalf("Error unmarshaling YAML (kubeconfig response): %v", err)
+			return &types.RequestError{
+				Code:    types.ErrRequestCode,
+				Message: fmt.Sprintf("error unmarshaling YAML (generate kubeconfig response) for cluster: %s, error: %v", clusterID, err),
+			}
 		}
 
 		combinedKubeconfig.Clusters = append(combinedKubeconfig.Clusters, kubeconfig.Clusters...)
@@ -105,17 +120,25 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 
 	combinedKubeconfigYaml, err := yaml.Marshal(combinedKubeconfig)
 	if err != nil {
-		log.Fatalf("Failed to marshal combined kubeconfig YAML: %v", err)
+		return &types.RequestError{
+			Code:    types.ErrRequestCode,
+			Message: fmt.Sprintf("failed to marshal combined kubeconfig YAML, error: %v", err),
+		}
 	}
 
 	createConfigFile(combinedKubeconfigYaml, outputPath)
+
 	return nil
 
 }
 
-func createConfigFile(combinedKubeconfigYaml []byte, outputPath string) {
+func createConfigFile(combinedKubeconfigYaml []byte, outputPath string) error {
 	err := os.WriteFile(outputPath+"/config", combinedKubeconfigYaml, 0644)
 	if err != nil {
-		log.Fatalf("Error creating combined config file: %v", err)
+		return &types.RequestError{
+			Code:    types.ErrRequestCode,
+			Message: fmt.Sprintf("error creating combined kubeconfig config file, error: %v", err),
+		}
 	}
+	return nil
 }
