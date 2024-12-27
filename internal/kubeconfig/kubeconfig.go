@@ -12,11 +12,12 @@ import (
 )
 
 const clusterListPath string = "/v3/clusters/"
+const generateKubeconfigUrlAction string = "generateKubeconfig"
 
 // GetClusters retrieves a list of all clusters from RMS
-func GetClusters(baseURL, apiToken string) ([]types.RMSCluster, error) {
+func GetClusters(baseUrl, apiToken string) ([]types.RMSCluster, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", baseURL+clusterListPath, nil)
+	req, err := http.NewRequest("GET", baseUrl+clusterListPath, nil)
 	if err != nil {
 		return nil, &types.RequestError{
 			Code:    types.ErrRequestCode,
@@ -55,8 +56,7 @@ func GetClusters(baseURL, apiToken string) ([]types.RMSCluster, error) {
 }
 
 // GenerateCombinedKubeconfig combines all generated kubeconfig files into one kubeconfig (config) file
-func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs []string) error {
-
+func GenerateCombinedKubeconfig(baseUrl, apiToken, outputPath string, clusterIDs []string) error {
 	client := &http.Client{}
 	combinedKubeconfig := &types.Kubeconfig{
 		APIVersion: "v1",
@@ -65,12 +65,12 @@ func GenerateCombinedKubeconfig(baseURL, apiToken, outputPath string, clusterIDs
 
 	for _, clusterID := range clusterIDs {
 
-		url := fmt.Sprintf("%s%s%s?action=generateKubeconfig", baseURL, clusterListPath, clusterID)
+		url := fmt.Sprintf("%s%s%s?action=%s", baseUrl, clusterListPath, clusterID, generateKubeconfigUrlAction)
 		req, err := http.NewRequest("POST", url, nil)
 		if err != nil {
 			return &types.RequestError{
 				Code:    types.ErrRequestCode,
-				Message: fmt.Sprintf("error creating new generate kubeconfig request: %v", err),
+				Message: fmt.Sprintf("error creating generate kubeconfig request: %v", err),
 			}
 		}
 

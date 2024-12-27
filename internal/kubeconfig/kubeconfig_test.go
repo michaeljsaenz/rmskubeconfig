@@ -61,7 +61,7 @@ func TestGetClusters_Unauthorized(t *testing.T) {
 
 }
 
-func TestGetClusters_InvalidUrlNoHost(t *testing.T) {
+func TestGetClusters_DoRequestErrorNoHost(t *testing.T) {
 	// invalid host (i.e., no host in URL)
 	_, err := GetClusters("http://", "mockApiToken")
 	if err == nil {
@@ -79,7 +79,7 @@ func TestGetClusters_InvalidUrlNoHost(t *testing.T) {
 
 }
 
-func TestGetClusters_InvalidScheme(t *testing.T) {
+func TestGetClusters_NewRequestInvalidScheme(t *testing.T) {
 	// missing protocol scheme (i.e., missing http/https)
 	_, err := GetClusters("://missing-scheme", "mockApiToken")
 	if err == nil {
@@ -258,5 +258,41 @@ func TestGenerateCombinedKubeconfig_ClusterNotFound(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "404") {
 		t.Errorf("Expected 404 error, but got: %v", err)
+	}
+}
+
+func TestGenerateCombinedKubeconfig_NewRequestInvalidScheme(t *testing.T) {
+	// missing protocol scheme (i.e., missing http/https)
+	err := GenerateCombinedKubeconfig("://missing-scheme", "mock-token", "", []string{"cluster-does-not-exist"})
+
+	if err == nil {
+		t.Fatalf("expected error, but got nil")
+	}
+
+	var reqErr *types.RequestError
+	if !errors.As(err, &reqErr) {
+		t.Fatalf("expected custom RequestError, but got: %T", err)
+	}
+
+	if reqErr.Code != types.ErrRequestCode {
+		t.Errorf("expected error code %d, but got: %d", types.ErrRequestCode, reqErr.Code)
+	}
+
+}
+
+func TestGenerateCombinedKubeconfig_DoRequestErrorNoHost(t *testing.T) {
+	// invalid host (i.e., no host in URL)
+	err := GenerateCombinedKubeconfig("https://", "mock-token", "", []string{"cluster-does-not-exist"})
+	if err == nil {
+		t.Fatalf("expected error, but got nil")
+	}
+
+	var reqErr *types.RequestError
+	if !errors.As(err, &reqErr) {
+		t.Fatalf("expected custom RequestError, but got: %T", err)
+	}
+
+	if reqErr.Code != types.ErrRequestCode {
+		t.Errorf("expected error code %d, but got: %d", types.ErrRequestCode, reqErr.Code)
 	}
 }
