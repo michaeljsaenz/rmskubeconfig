@@ -296,3 +296,54 @@ func TestGenerateCombinedKubeconfig_DoRequestErrorNoHost(t *testing.T) {
 		t.Errorf("expected error code %d, but got: %d", types.ErrRequestCode, reqErr.Code)
 	}
 }
+
+func TestGenerateCombinedKubeconfig_ErrorDecodingResponse(t *testing.T) {
+	// mock rms-api server
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// return non-JSON response
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("invalid json"))
+	}))
+	defer mockServer.Close()
+
+	err := GenerateCombinedKubeconfig(mockServer.URL, "mock-token", "", []string{"test-cluster"})
+	if err == nil {
+		t.Fatalf("expected error, but got nil")
+	}
+
+	var reqErr *types.RequestError
+	if !errors.As(err, &reqErr) {
+		t.Fatalf("expected custom RequestError, but got: %T", err)
+	}
+
+	if reqErr.Code != types.ErrRequestCode {
+		t.Errorf("Expected error code %d, but got: %d", types.ErrRequestCode, reqErr.Code)
+	}
+}
+
+func TestGenerateCombinedKubeconfig_MalformedYaml(t *testing.T) {
+	// mock rms-api server
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// return valid json, but invalid yaml
+		response := `{
+			"config": "invalid_yaml: [this, is, not, valid, yaml"
+		}`
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(response))
+	}))
+	defer mockServer.Close()
+
+	err := GenerateCombinedKubeconfig(mockServer.URL, "mock-token", "", []string{"test-cluster"})
+	if err == nil {
+		t.Fatalf("expected error, but got nil")
+	}
+
+	var reqErr *types.RequestError
+	if !errors.As(err, &reqErr) {
+		t.Fatalf("expected custom RequestError, but got: %T", err)
+	}
+
+	if reqErr.Code != types.ErrRequestCode {
+		t.Errorf("Expected error code %d, but got: %d", types.ErrRequestCode, reqErr.Code)
+	}
+}
