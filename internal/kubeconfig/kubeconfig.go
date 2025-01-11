@@ -114,21 +114,14 @@ func GenerateCombinedKubeconfig(baseUrl, apiToken, outputPath string, clusterIDs
 		combinedKubeconfig.Contexts = append(combinedKubeconfig.Contexts, kubeconfig.Contexts...)
 	}
 
-	combinedKubeconfigYaml, err := yaml.Marshal(combinedKubeconfig)
-	if err != nil {
-		return &types.RequestError{
-			Code:    types.ErrRequestCode,
-			Message: fmt.Sprintf("failed to marshal combined kubeconfig YAML, error: %v", err),
-		}
-	}
-
-	createConfigFile(combinedKubeconfigYaml, outputPath)
+	createConfigFile(combinedKubeconfig, outputPath)
 
 	return nil
 
 }
 
-func createConfigFile(combinedKubeconfigYaml []byte, outputPath string) error {
+func createConfigFile(combinedKubeconfig *types.Kubeconfig, outputPath string) error {
+	combinedKubeconfigYaml, _ := yaml.Marshal(combinedKubeconfig)
 	err := os.WriteFile(outputPath+"/config", combinedKubeconfigYaml, 0644)
 	if err != nil {
 		return &types.RequestError{
