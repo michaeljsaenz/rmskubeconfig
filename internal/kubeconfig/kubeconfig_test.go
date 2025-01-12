@@ -141,7 +141,7 @@ func TestGetClusters_ErrorDecodingResponse(t *testing.T) {
 }
 
 func TestGenerateCombinedKubeconfig_Success(t *testing.T) {
-	// Mock data for the kubeconfig response
+	// mock data for the kubeconfig response
 	mockKubeconfigResponseCluster1 := types.KubeconfigResponse{
 		Config: `
 clusters:
@@ -175,7 +175,7 @@ contexts:
     user: user2`,
 	}
 
-	// Mock HTTP server
+	// mock rms-api server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("Expected POST request, got %s", r.Method)
@@ -237,7 +237,7 @@ contexts:
 }
 
 func TestGenerateCombinedKubeconfig_ClusterNotFound(t *testing.T) {
-	// Mock HTTP server - kubeconfig response
+	// mock rms-api server - kubeconfig response
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("Expected POST request, got %s", r.Method)
@@ -327,7 +327,7 @@ func TestGenerateCombinedKubeconfig_MalformedYaml(t *testing.T) {
 		// return valid json, but invalid yaml
 		response := `{
 			"config": "invalid_yaml: [this, is, not, valid, yaml"
-		}`
+			}`
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(response))
 	}))
@@ -345,5 +345,62 @@ func TestGenerateCombinedKubeconfig_MalformedYaml(t *testing.T) {
 
 	if reqErr.Code != types.ErrRequestCode {
 		t.Errorf("Expected error code %d, but got: %d", types.ErrRequestCode, reqErr.Code)
+	}
+}
+
+func TestCreateConfigFile_InvalidFilePath(t *testing.T) {
+	var kubeconfig *types.Kubeconfig
+
+	err := createConfigFile(kubeconfig, "///invali/d//////pat/h///")
+	if err == nil {
+		t.Fatalf("expected error, but got nil")
+	}
+
+	var reqErr *types.RequestError
+	if !errors.As(err, &reqErr) {
+		t.Fatalf("expected custom RequestError, but got: %T", err)
+	}
+
+	if reqErr.Code != types.ErrRequestCode {
+		t.Errorf("Expected error code %d, but got: %d", types.ErrRequestCode, reqErr.Code)
+	}
+}
+
+func TestCreateConfigFile_Success(t *testing.T) {
+	tempDir := t.TempDir()
+
+	combinedKubeconfig := types.Kubeconfig{
+		APIVersion: "v1",
+		Kind:       "Config",
+		Clusters: []types.KubeconfigCluster{
+			{Name: "test-cluster", Cluster: types.KubeconfigClusterDetails{
+				Server: "https://test.local",
+			}},
+		},
+	}
+
+	err := createConfigFile(&combinedKubeconfig, tempDir)
+	if err != nil {
+		t.Fatalf("expected no error, but got: %v", err)
+	}
+
+	configFilePath := tempDir + "/config"
+	fileData, err := os.ReadFile(configFilePath)
+	if err != nil {
+		t.Fatalf("failed to read the config file: %v", err)
+	}
+
+	expectedCombinedKubeconfigContent := `apiVersion: v1
+kind: Config
+clusters:
+    - name: test-cluster
+      cluster:
+        server: https://test.local
+        certificate-authority-data: ""
+users: []
+contexts: []
+`
+	if string(fileData) != expectedCombinedKubeconfigContent {
+		t.Errorf("unexpected file content. Got:\n%v\nExpected:\n%v", string(fileData), expectedCombinedKubeconfigContent)
 	}
 }
