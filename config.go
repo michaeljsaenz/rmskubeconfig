@@ -1,6 +1,7 @@
 package rmskubeconfig
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -26,24 +27,26 @@ func NewConfig() *Config {
 }
 
 // SetRMSUrl sets RMS API URL
-func (c *Config) SetRMSUrl(url string) {
+func (c *Config) SetRMSUrl(url string) error {
 	// validate URL format
 	regex := `^(https?:\/\/)?([\w\-]+(\.[\w\-]+)+)(:[0-9]{1,5})?(\/[^\s]*)?$`
 	if match, _ := regexp.MatchString(regex, url); !match {
-		log.Fatalf("SetRMSUrl: invalid RMS URL format: %s", url)
+		return fmt.Errorf("invalid RMS URL format: %s", url)
 	}
 	c.rmsUrl = url
+	return nil
 }
 
 // SetApiToken sets RMS API token
-func (c *Config) SetApiToken(token string) {
+func (c *Config) SetApiToken(token string) error {
 	// validate token format
 	regex := `^token-\w+:\w+`
 
 	if match, _ := regexp.MatchString(regex, token); !match {
-		log.Fatalf("SetApiToken: invalid API token format")
+		return fmt.Errorf("invalid API token format, must match regex: %q", regex)
 	}
 	c.apiToken = token
+	return nil
 }
 
 // SetOutputPath sets path where to save config file
@@ -80,7 +83,7 @@ func (c *Config) OutputPath() string {
 func (c *Config) Run() {
 	cwd, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("NewConfig: failed to get current working directory: %v", err)
+		log.Fatalf("failed to get current working directory: %v", err)
 	}
 
 	if c.outputPath == "" {
