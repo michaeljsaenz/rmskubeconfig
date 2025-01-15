@@ -43,7 +43,6 @@ func (c *Config) SetApiToken(token string) error {
 	regex := `^token-\w+:\w+`
 
 	if match, _ := regexp.MatchString(regex, token); !match {
-		// log.Fatalf("SetApiToken: invalid API token format")
 		return fmt.Errorf("invalid API token format, must match regex: %q", regex)
 	}
 	c.apiToken = token
