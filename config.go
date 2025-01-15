@@ -18,15 +18,10 @@ type Config struct {
 
 // NewConfig creates a new Config instance with default values
 func NewConfig() *Config {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("NewConfig: failed to get current working directory: %v", err)
-	}
-
 	return &Config{
 		rmsUrl:     "",
 		apiToken:   "",
-		outputPath: cwd,
+		outputPath: "",
 	}
 }
 
@@ -83,6 +78,15 @@ func (c *Config) OutputPath() string {
 
 // Run executes the Config to generate combined kubeconfig (config) file
 func (c *Config) Run() {
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("NewConfig: failed to get current working directory: %v", err)
+	}
+
+	if c.outputPath == "" {
+		c.outputPath = cwd
+	}
+
 	clusters, _ := kubeconfig.GetClusters(c.rmsUrl, c.apiToken)
 
 	var clusterIDs []string
@@ -90,7 +94,7 @@ func (c *Config) Run() {
 		clusterIDs = append(clusterIDs, cluster.ID)
 	}
 
-	err := kubeconfig.GenerateCombinedKubeconfig(c.rmsUrl, c.apiToken, c.outputPath, clusterIDs)
+	err = kubeconfig.GenerateCombinedKubeconfig(c.rmsUrl, c.apiToken, c.outputPath, clusterIDs)
 	if err != nil {
 		log.Fatalf("Run: error generating combined kubeconfig: %v", err)
 	}
