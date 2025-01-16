@@ -4,3 +4,11 @@
   <a href="https://img.shields.io/github/v/release/michaeljsaenz/rmskubeconfig?include_prereleases" title="Latest Release" rel="nofollow"><img src="https://img.shields.io/github/v/release/michaeljsaenz/rmskubeconfig?include_prereleases" alt="Latest Release"></a>
 </p>
 # rmskubeconfig
+
+## Test Coverage
+
+```
+go test -v -coverprofile cover.out ./...
+go tool cover -html cover.out -o cover.html
+open cover.html
+```

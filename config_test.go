@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestConfig_NewConfig(t *testing.T) {
+func TestNewConfig(t *testing.T) {
 
 	config := NewConfig()
 
@@ -16,14 +16,14 @@ func TestConfig_NewConfig(t *testing.T) {
 
 	}
 	if config.apiToken != "" {
-		t.Fatalf("expected apiToken to be an empty string, got %q", config.apiToken)
+		t.Fatalf("expected apiToken to be an empty string, but was not")
 
 	}
 	if config.outputPath != "" {
 		t.Errorf("expected outputPath to be an empty string, got %q", config.outputPath)
 	}
 }
-func TestConfig_SetInvalidUrl(t *testing.T) {
+func TestSetRMSUrl_InvalidUrl(t *testing.T) {
 
 	config := NewConfig()
 
@@ -34,8 +34,23 @@ func TestConfig_SetInvalidUrl(t *testing.T) {
 	}
 
 }
+func TestSetRMSUrl_ValidUrl(t *testing.T) {
 
-func TestConfig_SetInvalidApiToken(t *testing.T) {
+	c := NewConfig()
+	expectedUrl := "https://local.test"
+
+	err := c.SetRMSUrl(expectedUrl)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	if c.rmsUrl != expectedUrl {
+		t.Errorf("expected rmsUrl to be %q, but got: %q", expectedUrl, c.rmsUrl)
+	}
+
+}
+
+func TestSetApiToken_InvalidToken(t *testing.T) {
 
 	config := NewConfig()
 
@@ -43,6 +58,36 @@ func TestConfig_SetInvalidApiToken(t *testing.T) {
 
 	if err == nil {
 		t.Fatalf("expected error, but got: %v", err)
+	}
+
+}
+
+func TestSetApiToken_EmptyInput(t *testing.T) {
+
+	c := NewConfig()
+	emptyToken := ""
+
+	err := c.SetApiToken(emptyToken)
+	if err == nil {
+		t.Errorf("expected error for empty token, but got none")
+	}
+	if c.apiToken != "" {
+		t.Errorf("expected API token to remain empty, but was not")
+	}
+
+}
+
+func TestSetApiToken_ValidInput(t *testing.T) {
+
+	c := NewConfig()
+	expectedToken := "token-test:test"
+
+	err := c.SetApiToken(expectedToken)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if c.apiToken != expectedToken {
+		t.Errorf("expected API token was not set correctly")
 	}
 
 }
