@@ -117,3 +117,46 @@ func TestSetOutputPath_MissingDirectoryError(t *testing.T) {
 	}
 
 }
+func TestRMSUrl(t *testing.T) {
+
+	expectedUrl := "https//test.url"
+	config := &Config{
+		rmsUrl: expectedUrl,
+	}
+
+	actualUrl := config.RMSUrl()
+
+	if expectedUrl != actualUrl {
+		t.Errorf("RMSUrl() expected %q; got %q", expectedUrl, actualUrl)
+	}
+
+}
+
+func TestApiToken(t *testing.T) {
+
+	expectedApiToken := "token-test:1234"
+	config := &Config{
+		apiToken: expectedApiToken,
+	}
+
+	actualApiToken := config.ApiToken()
+
+	if expectedApiToken != actualApiToken {
+		t.Errorf("ApiToken() expected %q; got %q", expectedApiToken, actualApiToken)
+	}
+
+}
+func TestOutputPath(t *testing.T) {
+
+	expectedOutputPath := "/test/path/"
+	config := &Config{
+		outputPath: expectedOutputPath + "x",
+	}
+
+	actualOutputPath := config.OutputPath()
+
+	if expectedOutputPath != actualOutputPath {
+		t.Errorf("OutputPath() expected %q; got %q", expectedOutputPath, actualOutputPath)
+	}
+
+}
