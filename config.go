@@ -50,18 +50,16 @@ func (c *Config) SetApiToken(token string) error {
 }
 
 // SetOutputPath sets path where to save config file
-func (c *Config) SetOutputPath(path string) {
+func (c *Config) SetOutputPath(path string) error {
 	// validate path exists and ensure it's a directory
 	fileInfo, err := os.Stat(path)
 	if err != nil || !fileInfo.IsDir() {
-		log.Fatalf("SetOutputPath: output path must be an existing directory: %s", path)
+		return fmt.Errorf("output path must be an existing directory: %s", path)
 	}
-	// convert to absolute path
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		log.Fatalf("SetOutputPath: failed to resolve absolute path: %s", path)
-	}
-	c.outputPath = absPath
+
+	c.outputPath = path
+
+	return nil
 }
 
 // RMSUrl returns RMS API URL
@@ -81,14 +79,23 @@ func (c *Config) OutputPath() string {
 
 // Run executes the Config to generate combined kubeconfig (config) file
 func (c *Config) Run() {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("failed to get current working directory: %v", err)
-	}
 
 	if c.outputPath == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			log.Fatalf("failed to get current working directory: %v", err)
+		}
+
 		c.outputPath = cwd
 	}
+
+	// convert to absolute path
+	absPath, err := filepath.Abs(c.outputPath)
+	if err != nil {
+		log.Fatalf("failed to resolve absolute path: %s, error: %v", c.outputPath, err)
+	}
+
+	c.outputPath = absPath
 
 	clusters, _ := kubeconfig.GetClusters(c.rmsUrl, c.apiToken)
 
