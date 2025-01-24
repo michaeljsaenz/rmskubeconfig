@@ -91,3 +91,29 @@ func TestSetApiToken_ValidInput(t *testing.T) {
 	}
 
 }
+func TestSetOutputPath_Success(t *testing.T) {
+
+	c := NewConfig()
+	expectedTempDir := t.TempDir()
+
+	err := c.SetOutputPath(expectedTempDir)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	if c.outputPath != expectedTempDir {
+		t.Errorf("expected outputPath was not set correctly")
+	}
+
+}
+func TestSetOutputPath_MissingDirectoryError(t *testing.T) {
+
+	c := NewConfig()
+	expectedTempDir := t.TempDir()
+
+	err := c.SetOutputPath(expectedTempDir + "/missing/directory")
+	if err == nil {
+		t.Fatalf("expected error, but got nil")
+	}
+
+}
