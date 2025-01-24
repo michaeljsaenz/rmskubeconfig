@@ -150,7 +150,7 @@ func TestOutputPath(t *testing.T) {
 
 	expectedOutputPath := "/test/path/"
 	config := &Config{
-		outputPath: expectedOutputPath + "x",
+		outputPath: expectedOutputPath,
 	}
 
 	actualOutputPath := config.OutputPath()
