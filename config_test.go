@@ -1,7 +1,15 @@
 package rmskubeconfig
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
+
+	"github.com/michaeljsaenz/rmskubeconfig/internal/kubeconfig"
+	"github.com/michaeljsaenz/rmskubeconfig/internal/types"
 )
 
 func TestNewConfig(t *testing.T) {
@@ -102,7 +110,7 @@ func TestSetOutputPath_Success(t *testing.T) {
 	}
 
 	if c.outputPath != expectedTempDir {
-		t.Errorf("expected outputPath was not set correctly")
+		t.Errorf("expected outputPath %q, got %q", expectedTempDir, c.outputPath)
 	}
 
 }
@@ -159,4 +167,157 @@ func TestOutputPath(t *testing.T) {
 		t.Errorf("OutputPath() expected %q; got %q", expectedOutputPath, actualOutputPath)
 	}
 
+}
+
+func TestRun_Success(t *testing.T) {
+	// mock response data
+	expectedClusters := []types.RMSCluster{
+		{ID: "1", Name: "Cluster-1"},
+	}
+	mockClusterResponse := types.RMSClusterResponse{Data: expectedClusters}
+
+	// mock data for the kubeconfig response
+	mockKubeconfigResponseCluster := types.KubeconfigResponse{
+		Config: `
+clusters:
+- name: cluster1
+  cluster:
+    server: https://cluster1.test
+users:
+- name: user1
+  user:
+    token: token
+contexts:
+- name: context1
+  context:
+    cluster: cluster1
+    user: user1`,
+	}
+
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if action := r.URL.Query().Get("action"); action == kubeconfig.GenerateKubeconfigUrlAction {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(mockKubeconfigResponseCluster)
+		} else if r.URL.Path == kubeconfig.ClusterListPath {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(mockClusterResponse)
+		}
+	}))
+	defer mockServer.Close()
+
+	c := &Config{
+		rmsUrl:     mockServer.URL,
+		apiToken:   "token-test:test",
+		outputPath: t.TempDir(),
+	}
+
+	c.Run()
+
+	_, err := os.ReadFile(c.outputPath + "/config")
+	if err != nil {
+		t.Errorf("failed to read combined kubeconfig config file, error: %v", err)
+	}
+}
+
+func TestRun_DefaultOutputPath(t *testing.T) {
+	// mock response data
+	expectedClusters := []types.RMSCluster{
+		{ID: "1", Name: "Cluster-1"},
+	}
+	mockClusterResponse := types.RMSClusterResponse{Data: expectedClusters}
+
+	// mock data for the kubeconfig response
+	mockKubeconfigResponseCluster := types.KubeconfigResponse{
+		Config: `
+clusters:
+- name: cluster1
+  cluster:
+    server: https://cluster1.test
+users:
+- name: user1
+  user:
+    token: token
+contexts:
+- name: context1
+  context:
+    cluster: cluster1
+    user: user1`,
+	}
+
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if action := r.URL.Query().Get("action"); action == kubeconfig.GenerateKubeconfigUrlAction {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(mockKubeconfigResponseCluster)
+		} else if r.URL.Path == kubeconfig.ClusterListPath {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(mockClusterResponse)
+		}
+	}))
+	defer mockServer.Close()
+
+	c := &Config{
+		rmsUrl:   mockServer.URL,
+		apiToken: "token-test:test",
+	}
+
+	c.Run()
+
+	_, err := os.ReadFile(c.outputPath + "/config")
+	if err != nil {
+		t.Errorf("failed to read combined kubeconfig config file, error: %v", err)
+	}
+}
+
+func TestRun_CombinedKubconfigError(t *testing.T) {
+	// mock response data
+	expectedClusters := []types.RMSCluster{
+		{ID: "1", Name: "Cluster-1"},
+	}
+	mockClusterResponse := types.RMSClusterResponse{Data: expectedClusters}
+
+	// mock data for the kubeconfig response
+	mockKubeconfigResponseCluster := types.KubeconfigResponse{
+		Config: `
+clusters:
+- name: cluster1
+  cluster:
+    server: https://cluster1.test
+users:
+- name: user1
+  user:
+    token: token
+contexts:
+- name: context1
+  context:
+    cluster: cluster1
+    user: user1`,
+	}
+
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if action := r.URL.Query().Get("action"); action == kubeconfig.GenerateKubeconfigUrlAction {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(mockKubeconfigResponseCluster)
+		} else if r.URL.Path == kubeconfig.ClusterListPath {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(mockClusterResponse)
+		}
+	}))
+	defer mockServer.Close()
+
+	c := &Config{
+		rmsUrl:     mockServer.URL,
+		apiToken:   "token-test:test",
+		outputPath: t.TempDir() + "/invalid/path/",
+	}
+
+	expectedError := "no such file or directory"
+
+	err := c.Run()
+	if err != nil && !strings.Contains(err.Error(), expectedError) {
+		t.Errorf("expected error message to contain %q, but got: %v", expectedError, err)
+	}
+
+	if err == nil {
+		t.Fatalf("expected error, but got: %v", err)
+	}
 }

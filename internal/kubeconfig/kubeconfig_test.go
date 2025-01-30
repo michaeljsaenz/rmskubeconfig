@@ -24,7 +24,7 @@ func TestGetClusters_Success(t *testing.T) {
 
 	// mock rms-api server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != clusterListPath {
+		if r.URL.Path != ClusterListPath {
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -183,7 +183,7 @@ contexts:
 
 		// extract the clusterID from URL
 		urlPath := r.URL.Path
-		clusterID := strings.TrimPrefix(urlPath, clusterListPath)
+		clusterID := strings.TrimPrefix(urlPath, ClusterListPath)
 
 		// Simulate kubeconfig response
 		switch clusterID {
@@ -350,19 +350,16 @@ func TestGenerateCombinedKubeconfig_MalformedYaml(t *testing.T) {
 
 func TestCreateConfigFile_InvalidFilePath(t *testing.T) {
 	var kubeconfig *types.Kubeconfig
+	invalidOutputPath := t.TempDir() + "/invalid/path/"
+	expectedError := "no such file or directory"
 
-	err := createConfigFile(kubeconfig, "///invali/d//////pat/h///")
+	err := createConfigFile(kubeconfig, invalidOutputPath)
+	if err != nil && !strings.Contains(err.Error(), expectedError) {
+		t.Errorf("expected error message to contain %q, but got: %v", expectedError, err)
+	}
+
 	if err == nil {
-		t.Fatalf("expected error, but got nil")
-	}
-
-	var reqErr *types.RequestError
-	if !errors.As(err, &reqErr) {
-		t.Fatalf("expected custom RequestError, but got: %T", err)
-	}
-
-	if reqErr.Code != types.ErrRequestCode {
-		t.Errorf("Expected error code %d, but got: %d", types.ErrRequestCode, reqErr.Code)
+		t.Fatalf("expected error, but got: %v", err)
 	}
 }
 
