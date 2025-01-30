@@ -2,12 +2,12 @@ package rmskubeconfig
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 
 	"github.com/michaeljsaenz/rmskubeconfig/internal/kubeconfig"
+	"github.com/michaeljsaenz/rmskubeconfig/internal/types"
 )
 
 // Config holds values for processing
@@ -15,6 +15,7 @@ type Config struct {
 	rmsUrl     string
 	apiToken   string
 	outputPath string
+	clusters   []types.RMSCluster
 }
 
 // NewConfig creates a new Config instance with default values
@@ -23,6 +24,7 @@ func NewConfig() *Config {
 		rmsUrl:     "",
 		apiToken:   "",
 		outputPath: "",
+		clusters:   []types.RMSCluster{},
 	}
 }
 
@@ -78,12 +80,13 @@ func (c *Config) OutputPath() string {
 }
 
 // Run executes the Config to generate combined kubeconfig (config) file
-func (c *Config) Run() {
+func (c *Config) Run() error {
+	fmt.Printf("cc %q", c.outputPath)
 
 	if c.outputPath == "" {
 		cwd, err := os.Getwd()
 		if err != nil {
-			log.Fatalf("failed to get current working directory: %v", err)
+			return fmt.Errorf("failed to get current working directory: %v", err)
 		}
 
 		c.outputPath = cwd
@@ -92,13 +95,13 @@ func (c *Config) Run() {
 	// convert to absolute path
 	absPath, err := filepath.Abs(c.outputPath)
 	if err != nil {
-		log.Fatalf("failed to resolve absolute path: %s, error: %v", c.outputPath, err)
+		return fmt.Errorf("failed to resolve absolute path: %s, error: %v", c.outputPath, err)
 	}
 
 	c.outputPath = absPath
 
 	clusters, _ := kubeconfig.GetClusters(c.rmsUrl, c.apiToken)
-
+	c.clusters = clusters
 	var clusterIDs []string
 	for _, cluster := range clusters {
 		clusterIDs = append(clusterIDs, cluster.ID)
@@ -106,6 +109,7 @@ func (c *Config) Run() {
 
 	err = kubeconfig.GenerateCombinedKubeconfig(c.rmsUrl, c.apiToken, c.outputPath, clusterIDs)
 	if err != nil {
-		log.Fatalf("Run: error generating combined kubeconfig: %v", err)
+		return err
 	}
+	return nil
 }

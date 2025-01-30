@@ -11,13 +11,13 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
-const clusterListPath string = "/v3/clusters/"
-const generateKubeconfigUrlAction string = "generateKubeconfig"
+const ClusterListPath string = "/v3/clusters/"
+const GenerateKubeconfigUrlAction string = "generateKubeconfig"
 
 // GetClusters retrieves a list of all clusters from RMS
 func GetClusters(baseUrl, apiToken string) ([]types.RMSCluster, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", baseUrl+clusterListPath, nil)
+	req, err := http.NewRequest("GET", baseUrl+ClusterListPath, nil)
 	if err != nil {
 		return nil, &types.RequestError{
 			Code:    types.ErrRequestCode,
@@ -65,7 +65,7 @@ func GenerateCombinedKubeconfig(baseUrl, apiToken, outputPath string, clusterIDs
 
 	for _, clusterID := range clusterIDs {
 
-		url := fmt.Sprintf("%s%s%s?action=%s", baseUrl, clusterListPath, clusterID, generateKubeconfigUrlAction)
+		url := fmt.Sprintf("%s%s%s?action=%s", baseUrl, ClusterListPath, clusterID, GenerateKubeconfigUrlAction)
 		req, err := http.NewRequest("POST", url, nil)
 		if err != nil {
 			return &types.RequestError{
@@ -113,8 +113,11 @@ func GenerateCombinedKubeconfig(baseUrl, apiToken, outputPath string, clusterIDs
 		combinedKubeconfig.Users = append(combinedKubeconfig.Users, kubeconfig.Users...)
 		combinedKubeconfig.Contexts = append(combinedKubeconfig.Contexts, kubeconfig.Contexts...)
 	}
+	err := createConfigFile(combinedKubeconfig, outputPath)
 
-	createConfigFile(combinedKubeconfig, outputPath)
+	if err != nil {
+		return fmt.Errorf("error creating combined kubeconfig config file, error: %w", err)
+	}
 
 	return nil
 
@@ -122,12 +125,11 @@ func GenerateCombinedKubeconfig(baseUrl, apiToken, outputPath string, clusterIDs
 
 func createConfigFile(combinedKubeconfig *types.Kubeconfig, outputPath string) error {
 	combinedKubeconfigYaml, _ := yaml.Marshal(combinedKubeconfig)
+
 	err := os.WriteFile(outputPath+"/config", combinedKubeconfigYaml, 0644)
 	if err != nil {
-		return &types.RequestError{
-			Code:    types.ErrRequestCode,
-			Message: fmt.Sprintf("error creating combined kubeconfig config file, error: %v", err),
-		}
+		return err
 	}
+
 	return nil
 }
