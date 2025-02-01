@@ -81,7 +81,6 @@ func (c *Config) OutputPath() string {
 
 // Run executes the Config to generate combined kubeconfig (config) file
 func (c *Config) Run() error {
-	fmt.Printf("cc %q", c.outputPath)
 
 	if c.outputPath == "" {
 		cwd, err := os.Getwd()

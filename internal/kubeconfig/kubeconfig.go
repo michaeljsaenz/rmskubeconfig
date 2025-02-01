@@ -113,10 +113,10 @@ func GenerateCombinedKubeconfig(baseUrl, apiToken, outputPath string, clusterIDs
 		combinedKubeconfig.Users = append(combinedKubeconfig.Users, kubeconfig.Users...)
 		combinedKubeconfig.Contexts = append(combinedKubeconfig.Contexts, kubeconfig.Contexts...)
 	}
-	err := createConfigFile(combinedKubeconfig, outputPath)
 
+	err := createConfigFile(combinedKubeconfig, outputPath)
 	if err != nil {
-		return fmt.Errorf("error creating combined kubeconfig config file, error: %w", err)
+		return err
 	}
 
 	return nil
@@ -128,7 +128,7 @@ func createConfigFile(combinedKubeconfig *types.Kubeconfig, outputPath string) e
 
 	err := os.WriteFile(outputPath+"/config", combinedKubeconfigYaml, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating combined kubeconfig config file, error: %v", err)
 	}
 
 	return nil
