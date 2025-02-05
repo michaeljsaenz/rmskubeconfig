@@ -8,6 +8,17 @@
 
 `rmskubeconfig` aggregates multiple kubeconfig files from **RMS (Rancher Management Service) managed clusters** into a single configuration file for simplified access.
 
+#### Table of Contents  
+- [Features](#features)
+- [Usage](#usage)
+  - [Initialize Configuration](#initialize-configuration)
+  - [Set RMS API URL](#set-rms-api-url)
+  - [Set API Token](#set-api-token)
+  - [Set Output Path](#set-output-path)
+  - [Generate Combined Kubeconfig](#generate-combined-kubeconfig)
+- [Quick Sample](#quick-sample)
+
+
 ## Features
 - **Configuration Management:** Stores RMS API URL, API token, and output path.
 - **Input Validation:** Ensures RMS URL, API token, and output path are valid.
@@ -53,4 +64,32 @@ if err != nil {
 }
 ```
 
-This generates a single kubeconfig file at the specified output path.
+## Quick Sample
+```go
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/michaeljsaenz/rmskubeconfig"
+)
+
+func main() {
+	cfg := rmskubeconfig.NewConfig()
+	cfg.SetApiToken(getEnv("RMS_TOKEN"))
+	cfg.SetRMSUrl(getEnv("RMS_URL"))
+	cfg.Run()
+}
+
+func getEnv(envKey string) (value string) {
+	value, ok := os.LookupEnv(envKey)
+	if !ok {
+		log.Fatalf("Error: `%v` environment variable not set, must set.", envKey)
+	}
+	return
+}
+
+```
+
+This generates a single kubeconfig file at the specified output path (current working directory by default).
