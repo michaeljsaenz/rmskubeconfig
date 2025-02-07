@@ -16,7 +16,7 @@
   - [Set API Token](#set-api-token)
   - [Set Output Path](#set-output-path)
   - [Generate Combined Kubeconfig](#generate-combined-kubeconfig)
-- [Quick Sample](#quick-sample)
+- [Sample Package Use](#sample-package-use)
 
 
 ## Features
@@ -64,7 +64,7 @@ if err != nil {
 }
 ```
 
-## Quick Sample
+## Sample Package Use
 ```go
 package main
 
