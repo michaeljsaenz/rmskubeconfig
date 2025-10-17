@@ -321,3 +321,99 @@ contexts:
 		t.Fatalf("expected error, but got: %v", err)
 	}
 }
+
+func TestRun_WithScopedClusterID(t *testing.T) {
+	// mock data for the kubeconfig response for a specific cluster
+	mockKubeconfigResponseCluster := types.KubeconfigResponse{
+		Config: `
+clusters:
+- name: cluster1
+  cluster:
+    server: https://cluster1.test
+users:
+- name: user1
+  user:
+    token: token
+contexts:
+- name: context1
+  context:
+    cluster: cluster1
+    user: user1`,
+	}
+
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only handle kubeconfig generation requests, no cluster listing
+		if action := r.URL.Query().Get("action"); action == kubeconfig.GenerateKubeconfigUrlAction {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(mockKubeconfigResponseCluster)
+		} else {
+			// For scoped tokens, cluster listing might fail or not be allowed
+			w.WriteHeader(http.StatusForbidden)
+		}
+	}))
+	defer mockServer.Close()
+
+	c := &Config{
+		rmsUrl:     mockServer.URL,
+		apiToken:   "token-scoped:test",
+		outputPath: t.TempDir(),
+		clusterID:  "specific-cluster-123",
+	}
+
+	err := c.Run()
+	if err != nil {
+		t.Errorf("unexpected error when running with scoped cluster ID: %v", err)
+	}
+
+	// Verify the config file was created
+	_, err = os.ReadFile(c.outputPath + "/config")
+	if err != nil {
+		t.Errorf("failed to read combined kubeconfig config file, error: %v", err)
+	}
+
+	// Verify that the clusters array was populated with the mock cluster
+	if len(c.clusters) != 1 {
+		t.Errorf("expected exactly 1 cluster, got %d", len(c.clusters))
+	}
+	if c.clusters[0].ID != "specific-cluster-123" {
+		t.Errorf("expected cluster ID to be 'specific-cluster-123', got %q", c.clusters[0].ID)
+	}
+}
+
+func TestSetClusterID_ValidInput(t *testing.T) {
+	c := NewConfig()
+	expectedClusterID := "cluster-123"
+
+	err := c.SetClusterID(expectedClusterID)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if c.clusterID != expectedClusterID {
+		t.Errorf("expected cluster ID to be %q, got %q", expectedClusterID, c.clusterID)
+	}
+}
+
+func TestSetClusterID_EmptyInput(t *testing.T) {
+	c := NewConfig()
+
+	err := c.SetClusterID("")
+	if err == nil {
+		t.Errorf("expected error for empty cluster ID, but got none")
+	}
+	if c.clusterID != "" {
+		t.Errorf("expected cluster ID to remain empty, but was not")
+	}
+}
+
+func TestClusterID(t *testing.T) {
+	expectedClusterID := "cluster-test-123"
+	config := &Config{
+		clusterID: expectedClusterID,
+	}
+
+	actualClusterID := config.ClusterID()
+
+	if expectedClusterID != actualClusterID {
+		t.Errorf("ClusterID() expected %q; got %q", expectedClusterID, actualClusterID)
+	}
+}
