@@ -15,14 +15,17 @@
   - [Set RMS API URL](#set-rms-api-url)
   - [Set API Token](#set-api-token)
   - [Set Output Path](#set-output-path)
+  - [Set Cluster ID (for scoped tokens)](#set-cluster-id-for-scoped-tokens)
   - [Generate Combined Kubeconfig](#generate-combined-kubeconfig)
 - [Sample Package Use](#sample-package-use)
+- [Usage with Scoped Tokens](#usage-with-scoped-tokens)
 
 
 ## Features
 - **Configuration Management:** Stores RMS API URL, API token, and output path.
 - **Input Validation:** Ensures RMS URL, API token, and output path are valid.
 - **Cluster Retrieval:** Fetches kubeconfig of all RMS-managed clusters via the RMS API.
+- **Scoped Token Support:** Works with RMS tokens that are scoped to specific cluster IDs.
 - **Kubeconfig Generation:** Merges kubeconfig files into a unified configuration.
 
 ## Usage
@@ -51,6 +54,15 @@ if err != nil {
 ### Set Output Path
 ```go
 err := config.SetOutputPath("/path/to/save/kubeconfig") // defaults to current-working-directory
+if err != nil {
+    // handle error
+}
+```
+
+### Set Cluster ID (for scoped tokens)
+```go
+// Use this when your RMS token is scoped to a specific cluster and cannot list all clusters
+err := config.SetClusterID("your-cluster-id")
 if err != nil {
     // handle error
 }
@@ -93,3 +105,37 @@ func getEnv(envKey string) (value string) {
 ```
 
 This generates a single kubeconfig file at the specified output path (current working directory by default).
+
+## Usage with Scoped Tokens
+
+If your RMS token is scoped to a specific cluster ID (i.e., it cannot list all clusters but can generate kubeconfig for a specific cluster), use the following approach:
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/michaeljsaenz/rmskubeconfig"
+)
+
+func main() {
+	cfg := rmskubeconfig.NewConfig()
+	cfg.SetApiToken(getEnv("RMS_TOKEN"))
+	cfg.SetRMSUrl(getEnv("RMS_URL"))
+	cfg.SetClusterID(getEnv("CLUSTER_ID")) // Set the specific cluster ID for scoped tokens
+	cfg.Run()
+}
+
+func getEnv(envKey string) (value string) {
+	value, ok := os.LookupEnv(envKey)
+	if !ok {
+		log.Fatalf("Error: `%v` environment variable not set, must set.", envKey)
+	}
+	return
+}
+
+```
+
+This approach bypasses the need to list all clusters and directly generates the kubeconfig for the specified cluster ID.

@@ -15,6 +15,7 @@ type Config struct {
 	rmsUrl     string
 	apiToken   string
 	outputPath string
+	clusterID  string
 	clusters   []types.RMSCluster
 }
 
@@ -24,6 +25,7 @@ func NewConfig() *Config {
 		rmsUrl:     "",
 		apiToken:   "",
 		outputPath: "",
+		clusterID:  "",
 		clusters:   []types.RMSCluster{},
 	}
 }
@@ -64,6 +66,16 @@ func (c *Config) SetOutputPath(path string) error {
 	return nil
 }
 
+// SetClusterID sets a specific cluster ID for scoped tokens
+// Use this when your RMS token is scoped to a specific cluster and cannot list all clusters
+func (c *Config) SetClusterID(clusterID string) error {
+	if clusterID == "" {
+		return fmt.Errorf("cluster ID cannot be empty")
+	}
+	c.clusterID = clusterID
+	return nil
+}
+
 // RMSUrl returns RMS API URL
 func (c *Config) RMSUrl() string {
 	return c.rmsUrl
@@ -77,6 +89,11 @@ func (c *Config) ApiToken() string {
 // OutputPath returns output file path
 func (c *Config) OutputPath() string {
 	return c.outputPath
+}
+
+// ClusterID returns the specific cluster ID if set
+func (c *Config) ClusterID() string {
+	return c.clusterID
 }
 
 // Run executes the Config to generate combined kubeconfig (config) file
@@ -99,11 +116,22 @@ func (c *Config) Run() error {
 
 	c.outputPath = absPath
 
-	clusters, _ := kubeconfig.GetClusters(c.rmsUrl, c.apiToken)
-	c.clusters = clusters
 	var clusterIDs []string
-	for _, cluster := range clusters {
-		clusterIDs = append(clusterIDs, cluster.ID)
+
+	// If a specific cluster ID is set, use it directly (for scoped tokens)
+	if c.clusterID != "" {
+		clusterIDs = []string{c.clusterID}
+		// Create a mock cluster entry for the specified ID
+		c.clusters = []types.RMSCluster{
+			{ID: c.clusterID, Name: fmt.Sprintf("cluster-%s", c.clusterID)},
+		}
+	} else {
+		// Use the existing behavior to get all clusters
+		clusters, _ := kubeconfig.GetClusters(c.rmsUrl, c.apiToken)
+		c.clusters = clusters
+		for _, cluster := range clusters {
+			clusterIDs = append(clusterIDs, cluster.ID)
+		}
 	}
 
 	err = kubeconfig.GenerateCombinedKubeconfig(c.rmsUrl, c.apiToken, c.outputPath, clusterIDs)
